@@ -1,0 +1,64 @@
+name: Remote Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      sync_only:
+        description: 'Sync files only (no compose restart)'
+        required: false
+        default: 'false'
+      run_sql:
+        description: 'Run database/schema.sql inside db container'
+        required: false
+        default: 'false'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync repo to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: |
+            backend/**
+            frontend/**
+            database/**
+            docker-compose.yml
+          target: ${{ secrets.DEPLOY_PATH }}
+          overwrite: true
+
+      - name: Restart services (docker compose)
+        if: inputs.sync_only != 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+            export DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
+            export JWT_SECRET='${{ secrets.JWT_SECRET }}'
+            docker compose up -d --build
+            docker compose ps
+
+      - name: Apply schema.sql inside db container (optional)
+        if: inputs.run_sql == 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+            docker compose exec -T db sh -lc "mysql -uroot -p'${{ secrets.DB_PASSWORD }}' feedback_system < database/schema.sql"
+

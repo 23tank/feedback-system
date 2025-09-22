@@ -1,0 +1,152 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root deps
+        run: npm install
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_BASE: http://localhost:4000/api
+        run: |
+          npm run build
+
+      - name: Backend smoke test
+        run: |
+          nohup node backend/src/index.js &
+          sleep 3
+          curl -sf http://localhost:4000/api/health
+
+  docker:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}/backend
+            ghcr.io/${{ github.repository }}/frontend
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/backend:latest
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frontend/Dockerfile
+          build-args: |
+            VITE_API_BASE=${{ secrets.VITE_API_BASE || 'http://localhost:5000/api' }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/frontend:latest
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # Optional: simple SSH deploy using docker compose on a VM
+  # Set secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_KEY, DB_PASSWORD, JWT_SECRET
+  deploy:
+    needs: docker
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_DEPLOY == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy compose and restart services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            set -e
+            mkdir -p ~/apps/feedback
+            cat > ~/apps/feedback/docker-compose.yml <<'YAML'
+            version: '3.9'
+            services:
+              db:
+                image: mysql:8.0
+                environment:
+                  MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+                  MYSQL_DATABASE: feedback_system
+                volumes:
+                  - db_data:/var/lib/mysql
+                healthcheck:
+                  test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+                  interval: 5s
+                  timeout: 5s
+                  retries: 20
+              backend:
+                image: ghcr.io/${{ github.repository }}/backend:latest
+                environment:
+                  PORT: 4000
+                  JWT_SECRET: ${JWT_SECRET}
+                  DB_HOST: db
+                  DB_PORT: 3306
+                  DB_USER: root
+                  DB_PASSWORD: ${DB_PASSWORD}
+                  DB_NAME: feedback_system
+                depends_on:
+                  db:
+                    condition: service_healthy
+                ports:
+                  - '5000:4000'
+              frontend:
+                image: ghcr.io/${{ github.repository }}/frontend:latest
+                ports:
+                  - '8082:80'
+                depends_on:
+                  - backend
+            volumes:
+              db_data:
+            YAML
+
+            cd ~/apps/feedback
+            export DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
+            export JWT_SECRET='${{ secrets.JWT_SECRET }}'
+            docker compose pull
+            docker compose up -d
+            docker compose ps
+
