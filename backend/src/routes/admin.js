@@ -75,5 +75,78 @@ router.get('/feedback', requireAuth, requireAdmin, async (req, res) => {
   res.json(rows);
 });
 
+// Submission history: list per user per form with question/answer
+router.get('/history', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { formId, userId, limit = 100, offset = 0 } = req.query;
+
+    const filters = [];
+    const params = [];
+    if (formId) {
+      filters.push('q.form_id = ?');
+      params.push(Number(formId));
+    }
+    if (userId) {
+      filters.push('r.user_id = ?');
+      params.push(Number(userId));
+    }
+
+    const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+
+    const sql = `
+      SELECT 
+        r.id,
+        r.user_id,
+        u.username,
+        r.question_id,
+        q.question_text,
+        q.type,
+        q.form_id,
+        f.title AS form_title,
+        r.answer,
+        r.created_at
+      FROM responses r
+      JOIN users u ON r.user_id = u.id
+      JOIN questions q ON r.question_id = q.id
+      LEFT JOIN forms f ON q.form_id = f.id
+      ${whereClause}
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?`;
+
+    params.push(Number(limit));
+    params.push(Number(offset));
+
+    const rows = await query(sql, params);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load submission history', details: String(err) });
+  }
+});
+
+// Users overview with submission/feedback counts
+router.get('/users', requireAuth, requireAdmin, async (req, res) => {
+  const sql = `
+    SELECT 
+      u.id,
+      u.username,
+      u.role,
+      COALESCE(rc.response_count, 0) AS response_count,
+      COALESCE(fc.feedback_count, 0) AS feedback_count,
+      COALESCE(lr.last_response_at, NULL) AS last_response_at
+    FROM users u
+    LEFT JOIN (
+      SELECT user_id, COUNT(*) AS response_count FROM responses GROUP BY user_id
+    ) rc ON rc.user_id = u.id
+    LEFT JOIN (
+      SELECT user_id, COUNT(*) AS feedback_count FROM feedback GROUP BY user_id
+    ) fc ON fc.user_id = u.id
+    LEFT JOIN (
+      SELECT user_id, MAX(created_at) AS last_response_at FROM responses GROUP BY user_id
+    ) lr ON lr.user_id = u.id
+    ORDER BY u.username ASC`;
+  const rows = await query(sql);
+  res.json(rows);
+});
+
 export default router;
 

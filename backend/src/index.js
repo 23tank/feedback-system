@@ -13,6 +13,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => res.json({ 
+  message: 'Feedback Management System API', 
+  status: 'running',
+  version: '1.0.0',
+  endpoints: {
+    health: '/api/health',
+    auth: '/api/auth',
+    feedback: '/api/feedback',
+    forms: '/api/forms',
+    admin: '/api/admin'
+  }
+}));
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRouter);
 app.use('/api/feedback', feedbackRouter);
