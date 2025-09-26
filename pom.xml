@@ -34,10 +34,6 @@
         <skipDocker>false</skipDocker>
     </properties>
 
-    <modules>
-        <module>backend</module>
-        <module>frontend</module>
-    </modules>
 
     <build>
         <pluginManagement>
@@ -95,7 +91,7 @@
                             </goals>
                         </execution>
                         <execution>
-                            <id>npm install</id>
+                            <id>frontend npm install</id>
                             <goals>
                                 <goal>npm</goal>
                             </goals>
@@ -104,7 +100,7 @@
                             </configuration>
                         </execution>
                         <execution>
-                            <id>npm test</id>
+                            <id>frontend npm test</id>
                             <goals>
                                 <goal>npm</goal>
                             </goals>
@@ -113,7 +109,7 @@
                             </configuration>
                         </execution>
                         <execution>
-                            <id>npm build</id>
+                            <id>frontend npm build</id>
                             <goals>
                                 <goal>npm</goal>
                             </goals>
@@ -135,12 +131,6 @@
                         <workingDirectory>backend</workingDirectory>
                     </configuration>
                     <executions>
-                        <execution>
-                            <id>backend install node and npm</id>
-                            <goals>
-                                <goal>install-node-and-npm</goal>
-                            </goals>
-                        </execution>
                         <execution>
                             <id>backend npm install</id>
                             <goals>
@@ -256,15 +246,6 @@
                 <artifactId>frontend-maven-plugin</artifactId>
                 <configuration>
                     <workingDirectory>frontend</workingDirectory>
-                </configuration>
-            </plugin>
-
-            <!-- Frontend plugin for backend build -->
-            <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-                <configuration>
-                    <workingDirectory>backend</workingDirectory>
                 </configuration>
             </plugin>
 
