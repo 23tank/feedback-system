@@ -55,7 +55,8 @@ pipeline {
     stage('Docker Login') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'docker_registry_creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+          // Windows-friendly login
+          bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
         }
       }
     }
@@ -85,7 +86,7 @@ pipeline {
         sshagent(credentials: ['deploy_ssh_key']) {
           bat """
             ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "cd %PROJECT_DIR% && git fetch --all && git checkout %GIT_BRANCH_BUILD% && git pull"
-            ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin"
+            ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
             ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "cd %PROJECT_DIR% && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d"
           """
         }
