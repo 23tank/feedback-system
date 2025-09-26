@@ -40,14 +40,10 @@ pipeline {
     stage('Maven Build & Test') {
       steps {
         script {
-          // Use Maven to build and test the entire project
-          sh './mvnw clean compile -Pci'
-          
-          // Run tests using Maven
-          sh './mvnw test -Pci'
-          
-          // Build frontend and backend using Maven
-          sh './mvnw package -Pci -DskipDocker=true'
+          // Use Maven wrapper for Windows
+          bat '.\\mvnw.cmd clean compile -Pci'
+          bat '.\\mvnw.cmd test -Pci'
+          bat '.\\mvnw.cmd package -Pci -DskipDocker=true'
         }
       }
     }
@@ -55,7 +51,7 @@ pipeline {
     stage('Docker Login') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'docker_registry_creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+          bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
         }
       }
     }
@@ -63,17 +59,13 @@ pipeline {
     stage('Docker Build & Push') {
       steps {
         script {
-          // Build Docker images using Maven Docker plugin
-          sh './mvnw clean package -Pdocker'
-          
-          // Tag and push images
-          sh "docker tag ${BACKEND_IMAGE}:${env.BUILD_NUMBER} ${BACKEND_IMAGE}:latest"
-          sh "docker tag ${FRONTEND_IMAGE}:${env.BUILD_NUMBER} ${FRONTEND_IMAGE}:latest"
-          
-          sh "docker push ${BACKEND_IMAGE}:${env.BUILD_NUMBER}"
-          sh "docker push ${FRONTEND_IMAGE}:${env.BUILD_NUMBER}"
-          sh "docker push ${BACKEND_IMAGE}:latest"
-          sh "docker push ${FRONTEND_IMAGE}:latest"
+          bat '.\\mvnw.cmd clean package -Pdocker'
+          bat "docker tag %BACKEND_IMAGE%:%BUILD_NUMBER% %BACKEND_IMAGE%:latest"
+          bat "docker tag %FRONTEND_IMAGE%:%BUILD_NUMBER% %FRONTEND_IMAGE%:latest"
+          bat "docker push %BACKEND_IMAGE%:%BUILD_NUMBER%"
+          bat "docker push %FRONTEND_IMAGE%:%BUILD_NUMBER%"
+          bat "docker push %BACKEND_IMAGE%:latest"
+          bat "docker push %FRONTEND_IMAGE%:latest"
         }
       }
     }
@@ -81,11 +73,10 @@ pipeline {
     stage('Deploy') {
       steps {
         sshagent(credentials: ['deploy_ssh_key']) {
-          // Ensure server has repo cloned once: git clone ... ${PROJECT_DIR}
-          sh """
-            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} 'cd ${PROJECT_DIR} && git fetch --all && git checkout ${GIT_BRANCH_BUILD} && git pull'
-            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} 'cd ${PROJECT_DIR} && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d'
+          bat """
+            ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "cd %PROJECT_DIR% && git fetch --all && git checkout %GIT_BRANCH_BUILD% && git pull"
+            ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin"
+            ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "cd %PROJECT_DIR% && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d"
           """
         }
       }
@@ -94,10 +85,7 @@ pipeline {
     stage('Create Deployment Package') {
       steps {
         script {
-          // Create deployment package using Maven assembly
-          sh './mvnw package -Pprod'
-          
-          // Archive the deployment package
+          bat '.\\mvnw.cmd package -Pprod'
           archiveArtifacts artifacts: 'target/feedback-system-*.tar.gz, target/feedback-system-*.zip', fingerprint: true
         }
       }
@@ -106,7 +94,7 @@ pipeline {
 
   post {
     always {
-      sh 'docker logout || true'
+      bat 'docker logout || exit 0'
       cleanWs()
     }
     success {
