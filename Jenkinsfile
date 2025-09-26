@@ -31,8 +31,7 @@ pipeline {
         checkout([$class: 'GitSCM',
           branches: [[name: "*/${env.GIT_BRANCH_BUILD}"]],
           userRemoteConfigs: [[
-            url: 'YOUR_GIT_REPO_URL',
-            credentialsId: 'git_credentials'
+            url: 'YOUR_PUBLIC_REPO_URL'
           ]]
         ])
       }
