@@ -31,7 +31,7 @@ pipeline {
         checkout([$class: 'GitSCM',
           branches: [[name: "*/${env.GIT_BRANCH_BUILD}"]],
           userRemoteConfigs: [[
-            url: 'YOUR_PUBLIC_REPO_URL'
+            url: 'https://github.com/23tank/feedback-system.git'
           ]]
         ])
       }
