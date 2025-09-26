@@ -1,15 +1,18 @@
+# Use Node base image
 FROM node:20-alpine
+
+# Set working directory
 WORKDIR /app
 
-# Copy backend package files only
-COPY backend/package*.json ./
-
-# Install dependencies
+# Copy package files and install dependencies
+COPY package*.json ./
 RUN npm install --omit=dev
 
 # Copy the rest of the backend code
-COPY backend/ ./
+COPY . .
 
+# Expose backend port
 EXPOSE 4000
-CMD ["node", "src/index.js"]
 
+# Start the backend
+CMD ["npm", "start"]

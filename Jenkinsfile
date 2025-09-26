@@ -57,7 +57,7 @@ pipeline {
       }
     }
 
-   stage('Docker Build & Push') {
+ stage('Docker Build & Push') {
   steps {
     script {
       // Backend build
@@ -74,6 +74,7 @@ pipeline {
     }
   }
 }
+
 
     stage('Deploy') {
       steps {
