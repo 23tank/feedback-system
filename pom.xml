@@ -19,7 +19,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
         <!-- Node.js and npm versions -->
-        <node.version>18.19.0</node.version>
+        <node.version>v18.19.0</node.version>
         <npm.version>10.2.3</npm.version>
         
         <!-- Docker image properties -->
@@ -73,90 +73,7 @@
                     </configuration>
                 </plugin>
 
-                <!-- Frontend Maven Plugin for Node.js builds -->
-                <plugin>
-                    <groupId>com.github.eirslett</groupId>
-                    <artifactId>frontend-maven-plugin</artifactId>
-                    <version>1.15.0</version>
-                    <configuration>
-                        <nodeVersion>${node.version}</nodeVersion>
-                        <npmVersion>${npm.version}</npmVersion>
-                        <workingDirectory>frontend</workingDirectory>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>install node and npm</id>
-                            <goals>
-                                <goal>install-node-and-npm</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>frontend npm install</id>
-                            <goals>
-                                <goal>npm</goal>
-                            </goals>
-                            <configuration>
-                                <arguments>ci</arguments>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>frontend npm test</id>
-                            <goals>
-                                <goal>npm</goal>
-                            </goals>
-                            <configuration>
-                                <arguments>test --silent</arguments>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>frontend npm build</id>
-                            <goals>
-                                <goal>npm</goal>
-                            </goals>
-                            <configuration>
-                                <arguments>run build</arguments>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <!-- Backend Maven Plugin for Node.js builds -->
-                <plugin>
-                    <groupId>com.github.eirslett</groupId>
-                    <artifactId>frontend-maven-plugin</artifactId>
-                    <version>1.15.0</version>
-                    <configuration>
-                        <nodeVersion>${node.version}</nodeVersion>
-                        <npmVersion>${npm.version}</npmVersion>
-                        <workingDirectory>backend</workingDirectory>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>backend install node and npm</id>
-                            <goals>
-                                <goal>install-node-and-npm</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>backend npm install</id>
-                            <goals>
-                                <goal>npm</goal>
-                            </goals>
-                            <configuration>
-                                <arguments>ci</arguments>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>backend npm test</id>
-                            <goals>
-                                <goal>npm</goal>
-                            </goals>
-                            <configuration>
-                                <arguments>test --silent</arguments>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
+                <!-- Removed duplicate frontend-maven-plugin entries from pluginManagement -->
 
                 <!-- Docker Maven Plugin -->
                 <plugin>
@@ -250,9 +167,85 @@
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.0</version>
                 <configuration>
+                    <nodeVersion>${node.version}</nodeVersion>
+                    <npmVersion>${npm.version}</npmVersion>
                     <workingDirectory>frontend</workingDirectory>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>frontend install node and npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>frontend npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>ci</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>frontend npm test</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>test --silent</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>frontend npm build</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Frontend plugin for backend build -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.0</version>
+                <configuration>
+                    <nodeVersion>${node.version}</nodeVersion>
+                    <npmVersion>${npm.version}</npmVersion>
+                    <workingDirectory>backend</workingDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>backend install node and npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>backend npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>ci</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>backend npm test</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>test --silent</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Docker plugin -->
