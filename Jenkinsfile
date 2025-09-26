@@ -2,15 +2,19 @@ pipeline {
   agent any
 
   environment {
-    // Change these to your values
+    // Docker info
     REGISTRY = 'docker.io'
-    DOCKERHUB_NAMESPACE = 'your-dockerhub-username'
+    DOCKERHUB_NAMESPACE = '2300033913' // your Docker Hub username
     BACKEND_IMAGE = "${env.DOCKERHUB_NAMESPACE}/feedback-backend"
     FRONTEND_IMAGE = "${env.DOCKERHUB_NAMESPACE}/feedback-frontend"
+
+    // Git & deploy info
     GIT_BRANCH_BUILD = 'main'
     DEPLOY_HOST = 'your.server.hostname'
     DEPLOY_USER = 'ubuntu'
-    PROJECT_DIR = '/opt/feedbackapp' // directory on server where repo lives
+    PROJECT_DIR = '/opt/feedbackapp'
+
+    // Tools
     NODEJS_TOOL = 'Node 18'
     MAVEN_TOOL = 'Maven 3.9.6'
   }
@@ -41,7 +45,6 @@ pipeline {
     stage('Maven Build & Test') {
       steps {
         script {
-          // Use Maven wrapper for Windows
           bat '.\\mvnw.cmd clean compile -Pci'
           bat '.\\mvnw.cmd test -Pci'
           bat '.\\mvnw.cmd package -Pci -DskipDocker=true'
@@ -60,9 +63,15 @@ pipeline {
     stage('Docker Build & Push') {
       steps {
         script {
-          bat '.\\mvnw.cmd clean package -Pdocker'
+          // Build Docker images
+          bat "docker build -t %BACKEND_IMAGE%:%BUILD_NUMBER% ./backend"
+          bat "docker build -t %FRONTEND_IMAGE%:%BUILD_NUMBER% ./frontend"
+
+          // Tag as latest
           bat "docker tag %BACKEND_IMAGE%:%BUILD_NUMBER% %BACKEND_IMAGE%:latest"
           bat "docker tag %FRONTEND_IMAGE%:%BUILD_NUMBER% %FRONTEND_IMAGE%:latest"
+
+          // Push images
           bat "docker push %BACKEND_IMAGE%:%BUILD_NUMBER%"
           bat "docker push %FRONTEND_IMAGE%:%BUILD_NUMBER%"
           bat "docker push %BACKEND_IMAGE%:latest"
