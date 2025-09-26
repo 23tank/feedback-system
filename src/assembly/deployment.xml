@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 
+          http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+    <id>deployment</id>
+    <formats>
+        <format>tar.gz</format>
+        <format>zip</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    
+    <fileSets>
+        <!-- Include all source files -->
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <excludes>
+                <exclude>node_modules/**</exclude>
+                <exclude>target/**</exclude>
+                <exclude>.git/**</exclude>
+                <exclude>.mvn/wrapper/maven-wrapper.jar</exclude>
+                <exclude>**/*.log</exclude>
+                <exclude>**/dist/**</exclude>
+                <exclude>**/build/**</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+    
+    <files>
+        <!-- Include package.json files -->
+        <file>
+            <source>package.json</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>package-lock.json</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>backend/package.json</source>
+            <outputDirectory>/backend/</outputDirectory>
+        </file>
+        <file>
+            <source>frontend/package.json</source>
+            <outputDirectory>/frontend/</outputDirectory>
+        </file>
+        
+        <!-- Include Docker files -->
+        <file>
+            <source>docker-compose.yml</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>docker-compose.prod.yml</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>backend/Dockerfile</source>
+            <outputDirectory>/backend/</outputDirectory>
+        </file>
+        <file>
+            <source>frontend/Dockerfile</source>
+            <outputDirectory>/frontend/</outputDirectory>
+        </file>
+        
+        <!-- Include deployment scripts -->
+        <file>
+            <source>deploy.sh</source>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>755</fileMode>
+        </file>
+        <file>
+            <source>update.sh</source>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>755</fileMode>
+        </file>
+        
+        <!-- Include nginx config -->
+        <file>
+            <source>nginx/nginx.conf</source>
+            <outputDirectory>/nginx/</outputDirectory>
+        </file>
+        
+        <!-- Include database schema -->
+        <file>
+            <source>database/schema.sql</source>
+            <outputDirectory>/database/</outputDirectory>
+        </file>
+        
+        <!-- Include documentation -->
+        <file>
+            <source>AWS_DEPLOYMENT_GUIDE.md</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+    </files>
+</assembly>
