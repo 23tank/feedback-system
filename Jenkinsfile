@@ -21,6 +21,7 @@ pipeline {
   }
 
   tools {
+    jdk 'Java 21'
     nodejs "${env.NODEJS_TOOL}"
     maven "${env.MAVEN_TOOL}"
   }
