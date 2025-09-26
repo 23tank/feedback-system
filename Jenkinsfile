@@ -57,23 +57,23 @@ pipeline {
       }
     }
 
-    stage('Docker Build & Push') {
-      steps {
-        script {
-          // Backend
-          bat "docker build -t %BACKEND_IMAGE%:%BUILD_NUMBER% ./backend"
-          bat "docker tag %BACKEND_IMAGE%:%BUILD_NUMBER% %BACKEND_IMAGE%:latest"
-          bat "docker push %BACKEND_IMAGE%:%BUILD_NUMBER%"
-          bat "docker push %BACKEND_IMAGE%:latest"
+   stage('Docker Build & Push') {
+  steps {
+    script {
+      // Backend build
+      bat "docker build -t %BACKEND_IMAGE%:%BUILD_NUMBER% ./backend"
+      bat "docker tag %BACKEND_IMAGE%:%BUILD_NUMBER% %BACKEND_IMAGE%:latest"
+      bat "docker push %BACKEND_IMAGE%:%BUILD_NUMBER%"
+      bat "docker push %BACKEND_IMAGE%:latest"
 
-          // Frontend
-          bat "docker build -t %FRONTEND_IMAGE%:%BUILD_NUMBER% ./frontend"
-          bat "docker tag %FRONTEND_IMAGE%:%BUILD_NUMBER% %FRONTEND_IMAGE%:latest"
-          bat "docker push %FRONTEND_IMAGE%:%BUILD_NUMBER%"
-          bat "docker push %FRONTEND_IMAGE%:latest"
-        }
-      }
+      // Frontend build
+      bat "docker build -t %FRONTEND_IMAGE%:%BUILD_NUMBER% ./frontend"
+      bat "docker tag %FRONTEND_IMAGE%:%BUILD_NUMBER% %FRONTEND_IMAGE%:latest"
+      bat "docker push %FRONTEND_IMAGE%:%BUILD_NUMBER%"
+      bat "docker push %FRONTEND_IMAGE%:latest"
     }
+  }
+}
 
     stage('Deploy') {
       steps {

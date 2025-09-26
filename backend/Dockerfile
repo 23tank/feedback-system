@@ -1,14 +1,15 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# Copy root package files
-COPY package.json package-lock.json ./
+# Copy backend package files only
+COPY backend/package*.json ./
 
-# Install only backend dependencies
-RUN npm install --prefix ./backend --omit=dev
+# Install dependencies
+RUN npm install --omit=dev
 
-# Copy backend source
-COPY backend ./ 
+# Copy the rest of the backend code
+COPY backend/ ./
 
 EXPOSE 4000
 CMD ["node", "src/index.js"]
+
