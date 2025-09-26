@@ -2,19 +2,16 @@ pipeline {
   agent any
 
   environment {
-    // Docker info
     REGISTRY = 'docker.io'
-    DOCKERHUB_NAMESPACE = '2300033913' // your Docker Hub username
+    DOCKERHUB_NAMESPACE = '2300033913'
     BACKEND_IMAGE = "${env.DOCKERHUB_NAMESPACE}/feedback-backend"
     FRONTEND_IMAGE = "${env.DOCKERHUB_NAMESPACE}/feedback-frontend"
 
-    // Git & deploy info
     GIT_BRANCH_BUILD = 'main'
     DEPLOY_HOST = 'your.server.hostname'
     DEPLOY_USER = 'ubuntu'
     PROJECT_DIR = '/opt/feedbackapp'
 
-    // Tools
     NODEJS_TOOL = 'Node 18'
     MAVEN_TOOL = 'Maven 3.9.6'
   }
@@ -55,8 +52,7 @@ pipeline {
     stage('Docker Login') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'docker_registry_creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          // Windows-friendly login
-          bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
+          bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
         }
       }
     }
@@ -64,18 +60,16 @@ pipeline {
     stage('Docker Build & Push') {
       steps {
         script {
-          // Build Docker images
+          // Backend
           bat "docker build -t %BACKEND_IMAGE%:%BUILD_NUMBER% ./backend"
-          bat "docker build -t %FRONTEND_IMAGE%:%BUILD_NUMBER% ./frontend"
-
-          // Tag as latest
           bat "docker tag %BACKEND_IMAGE%:%BUILD_NUMBER% %BACKEND_IMAGE%:latest"
-          bat "docker tag %FRONTEND_IMAGE%:%BUILD_NUMBER% %FRONTEND_IMAGE%:latest"
-
-          // Push images
           bat "docker push %BACKEND_IMAGE%:%BUILD_NUMBER%"
-          bat "docker push %FRONTEND_IMAGE%:%BUILD_NUMBER%"
           bat "docker push %BACKEND_IMAGE%:latest"
+
+          // Frontend
+          bat "docker build -t %FRONTEND_IMAGE%:%BUILD_NUMBER% ./frontend"
+          bat "docker tag %FRONTEND_IMAGE%:%BUILD_NUMBER% %FRONTEND_IMAGE%:latest"
+          bat "docker push %FRONTEND_IMAGE%:%BUILD_NUMBER%"
           bat "docker push %FRONTEND_IMAGE%:latest"
         }
       }
@@ -86,8 +80,7 @@ pipeline {
         sshagent(credentials: ['deploy_ssh_key']) {
           bat """
             ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "cd %PROJECT_DIR% && git fetch --all && git checkout %GIT_BRANCH_BUILD% && git pull"
-            ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
-            ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "cd %PROJECT_DIR% && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d"
+            ssh -o StrictHostKeyChecking=no %DEPLOY_USER%@%DEPLOY_HOST% "docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d"
           """
         }
       }
@@ -95,10 +88,8 @@ pipeline {
 
     stage('Create Deployment Package') {
       steps {
-        script {
-          bat '.\\mvnw.cmd package -Pprod'
-          archiveArtifacts artifacts: 'target/feedback-system-*.tar.gz, target/feedback-system-*.zip', fingerprint: true
-        }
+        bat '.\\mvnw.cmd package -Pprod'
+        archiveArtifacts artifacts: 'target/feedback-system-*.tar.gz, target/feedback-system-*.zip', fingerprint: true
       }
     }
   }
