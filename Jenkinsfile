@@ -57,7 +57,7 @@ pipeline {
       }
     }
 
- stage('Docker Build & Push') {
+stage('Docker Build & Push') {
   steps {
     script {
       // Backend build
@@ -66,14 +66,15 @@ pipeline {
       bat "docker push %BACKEND_IMAGE%:%BUILD_NUMBER%"
       bat "docker push %BACKEND_IMAGE%:latest"
 
-      // Frontend build
-      bat "docker build -t %FRONTEND_IMAGE%:%BUILD_NUMBER% ./frontend"
+      // Frontend build (from repo root)
+      bat "docker build -t %FRONTEND_IMAGE%:%BUILD_NUMBER% ."
       bat "docker tag %FRONTEND_IMAGE%:%BUILD_NUMBER% %FRONTEND_IMAGE%:latest"
       bat "docker push %FRONTEND_IMAGE%:%BUILD_NUMBER%"
       bat "docker push %FRONTEND_IMAGE%:latest"
     }
   }
 }
+
 
 
     stage('Deploy') {
