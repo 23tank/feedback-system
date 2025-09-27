@@ -17,18 +17,18 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        
+
         <!-- Node.js and npm versions -->
         <node.version>v18.19.0</node.version>
         <npm.version>10.2.3</npm.version>
-        
+
         <!-- Docker image properties -->
         <docker.registry>docker.io</docker.registry>
         <docker.namespace>your-dockerhub-username</docker.namespace>
         <docker.backend.image>${docker.namespace}/feedback-backend</docker.backend.image>
         <docker.frontend.image>${docker.namespace}/feedback-frontend</docker.frontend.image>
         <docker.tag>${project.version}</docker.tag>
-        
+
         <!-- Build properties -->
         <skipTests>false</skipTests>
         <skipDocker>false</skipDocker>
@@ -94,7 +94,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
 
-            <!-- Frontend plugin for frontend build -->
+            <!-- Frontend Maven Plugin (merged for frontend + backend) -->
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
@@ -102,78 +102,47 @@
                 <configuration>
                     <nodeVersion>${node.version}</nodeVersion>
                     <npmVersion>${npm.version}</npmVersion>
-                    <workingDirectory>frontend</workingDirectory>
                 </configuration>
                 <executions>
+                    <!-- Frontend -->
                     <execution>
-                        <id>frontend install node and npm</id>
-                        <goals>
-                            <goal>install-node-and-npm</goal>
-                        </goals>
+                        <id>frontend install</id>
+                        <goals><goal>install-node-and-npm</goal></goals>
+                        <configuration>
+                            <workingDirectory>frontend</workingDirectory>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>frontend npm install</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
+                        <goals><goal>npm</goal></goals>
                         <configuration>
+                            <workingDirectory>frontend</workingDirectory>
                             <arguments>ci</arguments>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>frontend npm test</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
+                        <id>frontend build</id>
+                        <goals><goal>npm</goal></goals>
                         <configuration>
-                            <skip>true</skip> <!-- Skip frontend tests -->
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>frontend npm build</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <configuration>
+                            <workingDirectory>frontend</workingDirectory>
                             <arguments>run build</arguments>
                         </configuration>
                     </execution>
-                </executions>
-            </plugin>
 
-            <!-- Frontend plugin for backend build -->
-            <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-                <version>1.15.0</version>
-                <configuration>
-                    <nodeVersion>${node.version}</nodeVersion>
-                    <npmVersion>${npm.version}</npmVersion>
-                    <workingDirectory>backend</workingDirectory>
-                </configuration>
-                <executions>
+                    <!-- Backend -->
                     <execution>
-                        <id>backend install node and npm</id>
-                        <goals>
-                            <goal>install-node-and-npm</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>backend npm install</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
+                        <id>backend install</id>
+                        <goals><goal>install-node-and-npm</goal></goals>
                         <configuration>
-                            <arguments>ci</arguments>
+                            <workingDirectory>backend</workingDirectory>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>backend npm test</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
+                        <id>backend npm install</id>
+                        <goals><goal>npm</goal></goals>
                         <configuration>
-                            <skip>true</skip> <!-- Skip backend tests -->
+                            <workingDirectory>backend</workingDirectory>
+                            <arguments>ci</arguments>
                         </configuration>
                     </execution>
                 </executions>
@@ -225,9 +194,7 @@
     <profiles>
         <profile>
             <id>dev</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
+            <activation><activeByDefault>true</activeByDefault></activation>
             <properties>
                 <skipTests>true</skipTests>
                 <skipDocker>true</skipDocker>
@@ -237,7 +204,7 @@
         <profile>
             <id>ci</id>
             <properties>
-                <skipTests>true</skipTests> <!-- Skip all tests in CI -->
+                <skipTests>true</skipTests>
                 <skipDocker>false</skipDocker>
             </properties>
         </profile>
